@@ -6,32 +6,49 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-
 using System.IO;
-using System.Drawing.Imaging;
+using ARTemplate;
 using System.Text.RegularExpressions;
 
 namespace ScanTemplate
 {
-    public partial class Form1 : Form
+    public partial class FormM : Form
     {
-        public Form1()
+        private string _workpath;
+        private AutoAngle _angle;
+        private Template _artemplate;
+        public FormM()
         {
             InitializeComponent();
             _workpath = textBoxWorkPath.Text;
             _angle = null;
             _artemplate = null;
         }
-        private void Form1_Load(object sender, EventArgs e)
+        private void FormM_Load(object sender, EventArgs e)
         {
             //AutoLoadLatestImg(_workpath);
             foreach (string s in GetLastestSubDirectorys(_workpath))
             {
                 //TODO: 使用类，显示相关信息
-                listBox1.Items.Add(s); 
+                listBox1.Items.Add(s);
             }
         }
+        private void buttonLeftHide_Click(object sender, EventArgs e)
+        {
+            if (TLP.ColumnStyles[0].Width > 10)
+                TLP.ColumnStyles[0].Width =2;
+            else
+                TLP.ColumnStyles[0].Width =20.0F;
 
+        }
+        private void buttonRightHide_Click(object sender, EventArgs e)
+        {
+            if (TLP.ColumnStyles[2].Width >10)
+                TLP.ColumnStyles[2].Width =2;
+            else
+                TLP.ColumnStyles[2].Width =20.0F;
+
+        }
         private void buttonworkpath_Click(object sender, EventArgs e)
         {
             string str = textBoxWorkPath.Text;
@@ -43,8 +60,8 @@ namespace ScanTemplate
             if (listBox1.SelectedIndex == -1) return;
             string path = listBox1.SelectedItem.ToString();
 
-            List<string> nameList = NameListFromDir( path);
-            if(nameList.Count==0) return;
+            List<string> nameList = NameListFromDir(path);
+            if (nameList.Count == 0) return;
 
             //string msg = "共有文件" + nameList.Count + "个" + string.Join("\r\n", nameList);
             //MessageBox.Show(msg);
@@ -52,7 +69,14 @@ namespace ScanTemplate
             string filename = nameList[0];
             TestAndCreateTemplate(filename, nameList);
         }
-        private void TestAndCreateTemplate( string filename, List<string> namelist=null)
+        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listBox1.SelectedIndex == -1) return;
+            string path = listBox1.SelectedItem.ToString();
+            //listBox2.Items.Clear();
+            //listBox2.Items.AddRange(NameListFromDir(path).ToArray());
+        }
+        private void TestAndCreateTemplate(string filename, List<string> namelist = null)
         {
             Bitmap bmp = (Bitmap)Bitmap.FromFile(filename);
             MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp);
@@ -64,11 +88,11 @@ namespace ScanTemplate
                     _artemplate = new ARTemplate.Template(filename, bmp, dr.CorrectRect);
                     _angle = new AutoAngle(dr.ListPoint); //或者导入时 设置
                 }
-                _angle.SetPaper(dr.ListPoint[0],dr.ListPoint[1],dr.ListPoint[2]);
+                _angle.SetPaper(dr.ListPoint[0], dr.ListPoint[1], dr.ListPoint[2]);
 
                 _artemplate.ResetBitMap(filename, bmp, dr.CorrectRect);//,_angle
 
-                _artemplate.SetFeaturePoint(dr.ListFeatureRectangle,dr.CorrectRect);
+                _artemplate.SetFeaturePoint(dr.ListFeatureRectangle, dr.CorrectRect);
 
                 this.Hide();
                 ARTemplate.FormTemplate f = new ARTemplate.FormTemplate(_artemplate);
@@ -79,7 +103,7 @@ namespace ScanTemplate
                 //DetectAllImgs(dr, namelist);
             }
         }
-        private void DetectAllImgs(MyDetectFeatureRectAngle dr,List<string> nameList)
+        private void DetectAllImgs(MyDetectFeatureRectAngle dr, List<string> nameList)
         {
             FileInfo fi = new FileInfo(nameList[0]);
             string dir = fi.Directory.FullName.Replace("LJH\\", "LJH\\Correct\\");
@@ -93,7 +117,6 @@ namespace ScanTemplate
             }
             File.WriteAllText("allimport.txt", sb.ToString());
         }
-
         private StringBuilder DetectAllImg(MyDetectFeatureRectAngle dr, string s)
         {
             Bitmap bmp = (Bitmap)Bitmap.FromFile(s);
@@ -101,11 +124,11 @@ namespace ScanTemplate
             //MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp);
             Rectangle CorrectRect = dr.Detected(bmp);
             StringBuilder sb = new StringBuilder();
-            sb.Append(s + "," + Recttostring(CorrectRect) + ",");
+            sb.Append(s + "," +  CorrectRect.ToString() + ",");
             if (CorrectRect.Width > 0)
             {
-            	//TODO: debug r1 in 001
-                Rectangle cr1 = new Rectangle(CorrectRect.Right-60,CorrectRect.Top-20,80,80);           
+                //TODO: debug r1 in 001
+                Rectangle cr1 = new Rectangle(CorrectRect.Right - 60, CorrectRect.Top - 20, 80, 80);
                 Rectangle r1 = dr.Detected(cr1, bmp);
                 Rectangle cr2 = new Rectangle(CorrectRect.Left - 20, CorrectRect.Bottom - 60, 80, 80);
                 Rectangle r2 = dr.Detected(cr2, bmp);
@@ -129,41 +152,31 @@ namespace ScanTemplate
             sb.AppendLine();
             return sb;
             //MessageBox.Show(sb.ToString());
-        }
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (listBox1.SelectedIndex == -1) return;
-            string path = listBox1.SelectedItem.ToString();
-            listBox2.Items.Clear();
-            listBox2.Items.AddRange(NameListFromDir(path) .ToArray());
-        }
-        private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
-        {
+        }        
 
-            if (listBox2.SelectedIndex == -1) return;
-            string filename = listBox2.SelectedItem.ToString();
-            if (checkBoxDetectImg.Checked)
-            {
-                Bitmap bmp1 = (Bitmap)Bitmap.FromFile(listBox2.Items[0].ToString());
-                MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp1);
-                if (dr.Detected())
-                {
-                    DetectAllImg(dr, listBox2.SelectedItem.ToString());
-                }
-            }
-            else
-            {
-                TestAndCreateTemplate(filename);
-            }
-        }
-
-        private string Recttostring(Rectangle r)
+        public static List<string> NameListFromDir(string fidir)
         {
-            return "(" + r.X + "," + r.Y + "," + r.Width + "," + r.Height + ")";
+            List<string> namelist = new List<string>();
+            DirectoryInfo dirinfo = new DirectoryInfo(fidir);
+            //string ext = fi.Extension;
+            foreach (FileInfo f in dirinfo.GetFiles())
+                if (f.Extension.ToLower() == ".tif")
+                    namelist.Add(f.FullName);
+            return namelist;
+        }
+        private List<string> NameListFromFile(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                FileInfo fi = new FileInfo(filename);
+                string fidir = fi.Directory.FullName;
+                return NameListFromDir(fidir);
+            }
+            return new List<string>();
         }
         private static string GetLastestSubDirectory(string path)
         {
-            List<string> sudirects = GetLastestSubDirectorys(path);               
+            List<string> sudirects = GetLastestSubDirectorys(path);
             if (sudirects.Count > 0)
                 return sudirects.Max();
             return "";
@@ -186,29 +199,5 @@ namespace ScanTemplate
             };
             return new List<string>();
         }
-
-        private List<string> NameListFromFile(string filename)
-        {
-            if (File.Exists(filename))
-            {
-                FileInfo fi = new FileInfo(filename);
-                string fidir = fi.Directory.FullName;
-                return NameListFromDir(fidir);
-            }
-            return new List<string>();
-        }
-        public static List<string> NameListFromDir(string fidir)
-        {
-            List<string> namelist = new List<string>();
-            DirectoryInfo dirinfo = new DirectoryInfo(fidir);
-            //string ext = fi.Extension;
-            foreach (FileInfo f in dirinfo.GetFiles())
-                if (f.Extension.ToLower() == ".tif")
-                    namelist.Add(f.FullName);
-            return namelist;
-        }
-        private string _workpath;
-        private AutoAngle _angle;
-        private ARTemplate.Template _artemplate;
     }
 }

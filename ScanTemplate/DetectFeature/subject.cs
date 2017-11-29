@@ -29,7 +29,7 @@ namespace ScanTemplate
     {
         public LoadBitmapData(string path)
         {
-             _nameList = Form1.NameListFromDir(path);
+             _nameList = FormM.NameListFromDir(path);
              position = 0;
         }
         public int Count(bool used) //
