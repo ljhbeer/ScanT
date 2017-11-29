@@ -32,6 +32,8 @@ namespace Tools
                 else if ("img图片".Contains(columntitles[count]) || columntitles[count].Contains("图片"))
                 {
                     dc.DataType = typeof(System.Drawing.Image);
+                }else{
+                	dc.DataType = typeof(string);
                 }
                 dt.Columns.Add(dc);
             }

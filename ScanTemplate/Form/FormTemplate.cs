@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -75,15 +76,21 @@ namespace ARTemplate
 
         private void toolStripButtonSaveTemplate_Click(object sender, EventArgs e)
         {
+        	UpdateTemplate();
+        	FileInfo fi = new FileInfo(template.Filename);        	
+        	string path = fi.Directory.Parent.Parent.FullName + "\\template\\";
+        	if(!Directory.Exists(path))
+        		Directory.CreateDirectory(path);
+        	string filename = path+fi.Directory.Name+"_"+template.GetTemplateName()+".xml";
+       
             SaveFileDialog saveFileDialog2 = new SaveFileDialog();
-            saveFileDialog2.FileName = "saveFileDialog2";
+            saveFileDialog2.FileName = filename;
             saveFileDialog2.Filter = "Xml files (*.xml)|*.xml";
             saveFileDialog2.Title = "Save xml file";
             if (saveFileDialog2.ShowDialog() == DialogResult.OK)
             {
                 try
                 {
-                    UpdateTemplate();
                     template.Save(saveFileDialog2.FileName);
                 }
                 catch(Exception ex)

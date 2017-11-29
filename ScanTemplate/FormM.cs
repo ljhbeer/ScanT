@@ -9,20 +9,28 @@ using System.Windows.Forms;
 using System.IO;
 using ARTemplate;
 using System.Text.RegularExpressions;
-
+using System.Threading;
 namespace ScanTemplate
 {
+	public delegate void MyInvoke( );
     public partial class FormM : Form
     {
         private string _workpath;
         private AutoAngle _angle;
         private Template _artemplate;
+        private MyDetectFeatureRectAngle _rundr;
+        private List<string> _runnameList;
+        private String _runmsg;
+        private DataTable _rundt;
         public FormM()
         {
             InitializeComponent();
             _workpath = textBoxWorkPath.Text;
             _angle = null;
             _artemplate = null;
+            _rundr = null;
+            _runnameList=null;
+            _runmsg = "";
         }
         private void FormM_Load(object sender, EventArgs e)
         {
@@ -31,6 +39,13 @@ namespace ScanTemplate
             {
                 //TODO: 使用类，显示相关信息
                 listBox1.Items.Add(s);
+            }
+            string templatepath = _workpath.Substring( 0,_workpath.LastIndexOf("\\"))+"\\Template";
+            foreach (string s in NameListFromDir(templatepath,".xml"))
+            {
+                //TODO: 使用类，显示相关信息
+                
+                listBoxTemplate.Items.Add( new TInfo(s));
             }
         }
         private void buttonLeftHide_Click(object sender, EventArgs e)
@@ -59,63 +74,117 @@ namespace ScanTemplate
         {
             if (listBox1.SelectedIndex == -1) return;
             string path = listBox1.SelectedItem.ToString();
-
             List<string> nameList = NameListFromDir(path);
             if (nameList.Count == 0) return;
-
-            //string msg = "共有文件" + nameList.Count + "个" + string.Join("\r\n", nameList);
-            //MessageBox.Show(msg);
-            //TODO：检测是否存在模板文件
             string filename = nameList[0];
-            TestAndCreateTemplate(filename, nameList);
+            CreateTemplate(filename);
+        }        
+        private void ButtonUseTemplateClick(object sender, System.EventArgs e)
+        {
+        	if (listBox1.SelectedIndex == -1) return;
+        	if(listBoxTemplate.SelectedIndex==-1){
+        		MessageBox.Show("还未选择模板");
+        		return ;
+        	}
+        	
+        	string path = listBox1.SelectedItem.ToString();
+            List<string> nameList = NameListFromDir(path);
+            if (nameList.Count == 0) return;
+            string filename = nameList[0];
+            
+            string templatefile =((TInfo) listBoxTemplate.SelectedItem).Str;            
+            CreateTemplate(filename,templatefile);
+        }
+        private void ButtonScanClick(object sender, EventArgs e)
+        {
+        	if (listBox1.SelectedIndex == -1) return;
+        	if(listBoxTemplate.SelectedIndex==-1){
+        		MessageBox.Show("还未选择模板");
+        		return ;
+        	}
+        	string path = listBox1.SelectedItem.ToString();
+            List<string> nameList = NameListFromDir(path);
+            if (nameList.Count == 0) return;
+        	Bitmap bmp = (Bitmap)Bitmap.FromFile(_artemplate.Filename);
+            MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp);
+            DetectAllImgs(dr, nameList);
+        	
         }
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listBox1.SelectedIndex == -1) return;
-            string path = listBox1.SelectedItem.ToString();
-            //listBox2.Items.Clear();
-            //listBox2.Items.AddRange(NameListFromDir(path).ToArray());
-        }
-        private void TestAndCreateTemplate(string filename, List<string> namelist = null)
-        {
-            Bitmap bmp = (Bitmap)Bitmap.FromFile(filename);
-            MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp);
 
+			string txt = listBox1.SelectedItem.ToString();
+			txt = txt.Substring( txt.LastIndexOf("\\")+1);
+			bool unselected = true;
+			for(int i=0; i<listBoxTemplate.Items.Count; i++){
+				if(listBoxTemplate.Items[i].ToString().StartsWith(txt)){
+					listBoxTemplate.SelectedIndex = i;
+					unselected = false;
+					break;
+				}
+			}
+			if(unselected)
+				listBoxTemplate.SelectedIndex = -1;
+        }
+        private void CreateTemplate(string filename, string templatefilename = ""){
+        	Bitmap bmp = (Bitmap)Bitmap.FromFile(filename);
+            MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp);
             if (dr.Detected())
             {
-                if (_artemplate == null)
-                {
-                    _artemplate = new ARTemplate.Template(filename, bmp, dr.CorrectRect);
-                    _angle = new AutoAngle(dr.ListPoint); //或者导入时 设置
+            	if(_artemplate!=null)
+            		_artemplate.Clear();
+            	
+                _artemplate = new ARTemplate.Template(filename, bmp, dr.CorrectRect);
+                _angle = new AutoAngle(dr.ListPoint); //或者导入时 设置
+                if(templatefilename!="" && File.Exists(templatefilename)){
+                	_artemplate.Load(templatefilename);
                 }
-                _angle.SetPaper(dr.ListPoint[0], dr.ListPoint[1], dr.ListPoint[2]);
-
-                _artemplate.ResetBitMap(filename, bmp, dr.CorrectRect);//,_angle
-
+                
+            	this.Hide();
                 _artemplate.SetFeaturePoint(dr.ListFeatureRectangle, dr.CorrectRect);
-
-                this.Hide();
                 ARTemplate.FormTemplate f = new ARTemplate.FormTemplate(_artemplate);
                 f.ShowDialog();
                 this.Show();
-
-                //if(namelist!=null)
-                //DetectAllImgs(dr, namelist);
             }
         }
+       
         private void DetectAllImgs(MyDetectFeatureRectAngle dr, List<string> nameList)
         {
             FileInfo fi = new FileInfo(nameList[0]);
             string dir = fi.Directory.FullName.Replace("LJH\\", "LJH\\Correct\\");
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
-
-            StringBuilder sb = new StringBuilder();
-            foreach (string s in nameList)
+			
+            _rundt = Tools.DataTableTools.ConstructDataTable(new string[]{
+                    "序号","文件名","姓名","考号","选择题"  });
+            dgv.DataSource = _rundt;
+            _rundr=dr;
+            _runnameList = nameList;
+            
+            Thread thread=new Thread(new ThreadStart(RunDetectAllImg)); 
+			thread.Start(); 
+        }
+        public void RunDetectAllImg(){
+        	StringBuilder sb = new StringBuilder();
+            foreach (string s in _runnameList)
             {
-                sb.Append(DetectAllImg(dr, s));
+            	_runmsg = DetectAllImg(_rundr, s).ToString();
+                sb.Append(_runmsg);
+                this.Invoke( new MyInvoke(ShowMsg));
+                Thread.Sleep(100);
             }
             File.WriteAllText("allimport.txt", sb.ToString());
+        }
+        public void ShowMsg(){
+        	string s = _runmsg.Substring(0,_runmsg.IndexOf(","));
+        	string ns = _runmsg.Substring( _runmsg.IndexOf("},")+1);
+
+    		DataRow dr = _rundt.NewRow();
+    		dr["文件名"]  = s;
+    		dr["选择题"] = ns;
+    		dr["序号"]=_rundt.Rows.Count+1;
+    		_rundt.Rows.Add(dr);
         }
         private StringBuilder DetectAllImg(MyDetectFeatureRectAngle dr, string s)
         {
@@ -154,13 +223,13 @@ namespace ScanTemplate
             //MessageBox.Show(sb.ToString());
         }        
 
-        public static List<string> NameListFromDir(string fidir)
+        public static List<string> NameListFromDir(string fidir,string ext =".tif" )
         {
             List<string> namelist = new List<string>();
             DirectoryInfo dirinfo = new DirectoryInfo(fidir);
             //string ext = fi.Extension;
             foreach (FileInfo f in dirinfo.GetFiles())
-                if (f.Extension.ToLower() == ".tif")
+                if (f.Extension.ToLower() == ext)
                     namelist.Add(f.FullName);
             return namelist;
         }
@@ -199,5 +268,18 @@ namespace ScanTemplate
             };
             return new List<string>();
         }
+    }
+    public class TInfo{
+    	public TInfo(string s){
+    		this.Str  = s;
+    	}
+    	public string Str;
+    	public override string ToString()
+		{
+    		if(Str.Contains("\\"))
+    		return Str.Substring( Str.LastIndexOf("\\")+1);
+    		return Str;
+		}
+ 
     }
 }

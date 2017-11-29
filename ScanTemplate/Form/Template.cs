@@ -20,6 +20,12 @@ namespace ARTemplate
             _dic = new Dictionary<string, List<Area>>();
     
         }
+        public void Clear(){
+        	ResetData();
+        	_dic.Clear();
+        	if(_src!=null)
+        		_src.Dispose();
+        }
         public void ResetBitMap(string imgpath, Bitmap bmp, Rectangle CorrectRect)
         {
             this._imagefilename = imgpath;
@@ -239,7 +245,8 @@ namespace ARTemplate
                 {
                     TreeNode t = new TreeNode();
                     int cnt = tc.Count + 1;
-                    t.Name = t.Text =s + cnt;
+                    t.Name = cnt.ToString();
+                    t.Text =s + cnt;
                     t.Tag =I;
                     tc.Add(t);
                 }
@@ -260,7 +267,18 @@ namespace ARTemplate
                 r.Offset(-cr.X,-cr.Y);
                 _dic[key].Add(new FeaturePoint(r, midpoint));
             }
-        }
+        }        
+		public string GetTemplateName()
+		{
+			string str = "";
+			if(_dic.ContainsKey("选择题"))
+				str+= "选择题"+_dic["选择题"].Count;			
+			if(_dic.ContainsKey("非选择题"))
+				str+= "_非选择题"+_dic["非选择题"].Count;
+			if(Correctrect!=null)
+				str+="_"+Correctrect.ToString("-");
+			return str;
+		}
         public String NodeName { get { return "TEMPLATE"; } }
         public Bitmap Image { get { return _src; } }
         public List<Area> SingleAreas {get { return _dic["选择题"];}}
@@ -280,5 +298,6 @@ namespace ARTemplate
         private Bitmap _src;
         private string _imagefilename;
         private Dictionary< string, List<Area>> _dic;
+    	
     }
 }

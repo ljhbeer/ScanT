@@ -490,6 +490,9 @@ namespace ARTemplate
     //Rectangle Tools
     public static class extend
     {
+    	public static string ToString(this Rectangle Rect,string split){
+    		return Rect.X + split + Rect.Y + split + +Rect.Width + split + Rect.Height;
+    	}
         public static string ToXmlString(this Rectangle Rect)
         {
             return "<Rectangle>" + Rect.X + "," + Rect.Y + "," + +Rect.Width + "," + Rect.Height + "</Rectangle>";
