@@ -276,7 +276,7 @@ namespace ARTemplate
             return str;
         }
         public string Name { get; set; }
-        private string Type;
+        public string Type { get; set; }
         // "填涂横向" || Type == "填涂纵向"
         public List<List<Point>> list;
         public Size Size;
