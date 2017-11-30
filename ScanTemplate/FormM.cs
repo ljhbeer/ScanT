@@ -47,6 +47,7 @@ namespace ScanTemplate
                 
                 listBoxTemplate.Items.Add( new TInfo(s));
             }
+            panel3.AutoScroll = true;
         }
         private void buttonLeftHide_Click(object sender, EventArgs e)
         {
@@ -61,7 +62,7 @@ namespace ScanTemplate
             if (TLP.ColumnStyles[2].Width >10)
                 TLP.ColumnStyles[2].Width =2;
             else
-                TLP.ColumnStyles[2].Width =20.0F;
+                TLP.ColumnStyles[2].Width =35.0F;
 
         }
         private void buttonworkpath_Click(object sender, EventArgs e)
@@ -113,13 +114,36 @@ namespace ScanTemplate
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listBox1.SelectedIndex == -1) return;
-
-			string txt = listBox1.SelectedItem.ToString();
-			txt = txt.Substring( txt.LastIndexOf("\\")+1);
+			string templatename = listBox1.SelectedItem.ToString();
+            string txt = templatename.Substring(templatename.LastIndexOf("\\") + 1);
 			bool unselected = true;
 			for(int i=0; i<listBoxTemplate.Items.Count; i++){
 				if(listBoxTemplate.Items[i].ToString().StartsWith(txt)){
 					listBoxTemplate.SelectedIndex = i;
+                    string templatefilename = ((TInfo)listBoxTemplate.SelectedItem).Str;
+                    string dataname = templatefilename .Replace(".xml", ".txt");
+
+                    if (_artemplate == null)
+                    {
+                        Template t = new Template(templatefilename);
+                        if (t.Image != null)
+                        {
+                            _artemplate = t;
+                            List<Point> ListPoint = new List<Point>();
+                            foreach (Area I in t.Dic["特征点"])
+                            {
+                                ListPoint.Add(I.ImgArea.Location);
+                            }
+                            if(ListPoint.Count==3)
+                                _angle = new AutoAngle( ListPoint);
+                        }
+                    }
+
+                    if (File.Exists(dataname))
+                    {
+                        listBoxData.Items.Clear();
+                        listBoxData.Items.Add(listBox1.SelectedItem);
+                    }
 					unselected = false;
 					break;
 				}
@@ -127,6 +151,127 @@ namespace ScanTemplate
 			if(unselected)
 				listBoxTemplate.SelectedIndex = -1;
         }
+        private void listBoxData_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listBox1.SelectedIndex == -1) return;
+            string dataname = ((TInfo)listBoxTemplate.SelectedItem).Str.Replace(".xml", ".txt");
+            //TODO： 检测是否导入已有数据
+            _rundt = Tools.DataTableTools.ConstructDataTable(new string[]{
+                    "序号","文件名","校验","姓名","考号","选择题"  });
+            dgv.DataSource = _rundt;
+
+            string[] ls = File.ReadAllLines(dataname);
+            for (int i = 0; i < ls.Length; i++)
+            {
+                string[] ss = ls[i].Split(',');
+                DataRow dr = _rundt.NewRow();
+                dr["序号"] = _rundt.Rows.Count + 1;
+                if (ss.Length > 3)
+                {
+                    dr["文件名"] = ss[0];
+                    dr["校验"] = Convert.ToDouble(ss[2]);
+                    dr["选择题"] = ss[3];
+                }
+                _rundt.Rows.Add(dr);
+            }
+
+        }
+        private void dgv_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex == -1 || _rundt == null || e.ColumnIndex == -1 || _angle==null || _artemplate==null )
+                return;
+            string fn = _rundt.Rows[e.RowIndex]["文件名"].ToString().Replace("LJH\\","LJH\\Correct\\");
+            if (File.Exists(fn))
+            {
+                double angle = (double)(_rundt.Rows[e.RowIndex]["校验"]);
+                Bitmap bmp =(Bitmap) Bitmap.FromFile(fn);
+                DrawInfoBmp(bmp,angle);
+                //pictureBox1.Image = bmp;
+            }
+        }
+        private void pictureBox1_MouseEnter(object sender, EventArgs e)
+        {
+            //if (m_act == Act.ZoomMouse)
+            pictureBox1.Focus();
+        }
+        private void pictureBox1_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (pictureBox1.Image == null) return;
+            int numberOfTextLinesToMove = e.Delta * SystemInformation.MouseWheelScrollLines / 120;
+            double f = 0.0;
+            if (numberOfTextLinesToMove > 0)
+            {
+                for (int i = 0; i < numberOfTextLinesToMove; i++)
+                {
+                    f += 0.05;
+                }
+                Zoomrat(f + 1, e.Location);
+            }
+            else if (numberOfTextLinesToMove < 0)
+            {
+                for (int i = 0; i > numberOfTextLinesToMove; i--)
+                {
+                    f -= 0.05;
+                }
+                Zoomrat(f + 1, e.Location);
+            }
+        }
+        private void Zoomrat(double rat, Point e)
+        {
+            Bitmap bitmap_show = (Bitmap)pictureBox1.Image;
+            Point L = pictureBox1.Location;
+            Point S = panel1.AutoScrollPosition;
+            int w = (int)(pictureBox1.Width * rat);
+            int h = w * bitmap_show.Height / bitmap_show.Width;
+            L.Offset((int)(e.X * (rat - 1)), (int)(e.Y * (rat - 1)));
+            pictureBox1.SetBounds(S.X, S.Y, w, h);
+            //zoombox.UpdateBoxScale(pictureBox1);
+            S.Offset((int)(e.X * (1 - rat)), (int)(e.Y * (1 - rat)));
+            panel1.Invalidate();
+            panel1.AutoScrollPosition = new Point(-S.X, -S.Y);
+        }
+        private void DrawInfoBmp(Bitmap bmp, double angle)
+        {
+            if(_angle!=null)
+                _angle.SetPaper(angle);           
+            bmp = bmp.Clone(new Rectangle(0, 0, bmp.Width, bmp.Height), System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                Pen pen = Pens.Red;
+                Brush dark = Brushes.Black;
+                Brush white = Brushes.White;
+                Brush Red = Brushes.Red;
+                Font font = DefaultFont;
+              
+                foreach (string s in new string[] { "特征点", "考号","姓名", "选择题", "非选择题"})
+                    if (_artemplate.Dic.ContainsKey(s))
+                    {
+                        int cnt = 0;
+                        foreach (Area I in _artemplate.Dic[s])
+                        {
+                            g.DrawRectangle(pen, I.ImgArea );
+                            if (I.HasSubArea())
+                            {
+                                foreach (Rectangle r in I.ImgSubArea())
+                                {
+                                    r.Offset(I.ImgArea.Location);
+                                    g.DrawRectangle(pen,  r );
+                                    r.Offset(-1, -1);
+                                    g.DrawRectangle(pen,  r );
+                                    r.Offset(2, 2);
+                                    g.DrawRectangle(pen,  r );
+                                }
+                            }
+                            if (I.NeedFill())
+                            {
+                                g.FillRectangle(I.FillPen(), I.ImgArea );
+                                g.DrawString(cnt.ToString(), font, Red,  I.ImgArea .Location);
+                            }
+                        }
+                    }
+            }
+            pictureBox1.Image = bmp;
+        }       
         private void CreateTemplate(string filename, string templatefilename = ""){
         	Bitmap bmp = (Bitmap)Bitmap.FromFile(filename);
             MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp);
@@ -157,7 +302,7 @@ namespace ScanTemplate
                 Directory.CreateDirectory(dir);
 			
             _rundt = Tools.DataTableTools.ConstructDataTable(new string[]{
-                    "序号","文件名","姓名","考号","选择题"  });
+                    "序号","文件名","校验","姓名","考号","选择题"  });
             dgv.DataSource = _rundt;
             _rundr=dr;
             _runnameList = nameList;
@@ -177,12 +322,12 @@ namespace ScanTemplate
             File.WriteAllText("allimport.txt", sb.ToString());
         }
         public void ShowMsg(){
-        	string s = _runmsg.Substring(0,_runmsg.IndexOf(","));
-        	string ns = _runmsg.Substring( _runmsg.IndexOf("},")+1);
+            string[] ss = _runmsg.Split(',');
 
-    		DataRow dr = _rundt.NewRow();
-    		dr["文件名"]  = s;
-    		dr["选择题"] = ns;
+            DataRow dr = _rundt.NewRow();
+            dr["文件名"] = ss[0];
+            dr["校验"] = Convert.ToDouble( ss[2] );
+    		dr["选择题"] = ss[3];
     		dr["序号"]=_rundt.Rows.Count+1;
     		_rundt.Rows.Add(dr);
         }
@@ -193,7 +338,7 @@ namespace ScanTemplate
             //MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp);
             Rectangle CorrectRect = dr.Detected(bmp);
             StringBuilder sb = new StringBuilder();
-            sb.Append(s + "," +  CorrectRect.ToString() + ",");
+            sb.Append(s + "," +  CorrectRect.ToString("-") + ",");
             if (CorrectRect.Width > 0)
             {
                 //TODO: debug r1 in 001
@@ -202,8 +347,8 @@ namespace ScanTemplate
                 Rectangle cr2 = new Rectangle(CorrectRect.Left - 20, CorrectRect.Bottom - 60, 80, 80);
                 Rectangle r2 = dr.Detected(cr2, bmp);
 
-                _angle.SetPaper(CorrectRect.Location, r1.Location, r2.Location);
-
+                
+                sb.Append( _angle.SetPaper(CorrectRect.Location, r1.Location, r2.Location)+"," );
                 Bitmap nbmp = (Bitmap)bmp.Clone(CorrectRect, bmp.PixelFormat);
                 nbmp.Save(s.Replace("LJH\\", "LJH\\Correct\\"));
 
@@ -268,6 +413,7 @@ namespace ScanTemplate
             };
             return new List<string>();
         }
+
     }
     public class TInfo{
     	public TInfo(string s){

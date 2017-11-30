@@ -43,7 +43,7 @@ namespace ScanTemplate
                         int cnt = Tools.BitmapTools.CountRectBlackcnt(bmp, rp);
             			blackpixs.Add(cnt);
             		}
-            		sb.Append( GetOptions(blackpixs,validblackcnt)+",");
+            		sb.Append( GetOptions(blackpixs,validblackcnt)+"|");
             	}
                 //_src.UnlockBits(bmpdata);
             }

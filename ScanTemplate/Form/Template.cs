@@ -20,6 +20,19 @@ namespace ARTemplate
             _dic = new Dictionary<string, List<Area>>();
     
         }
+        public Template(String xmlFileName)
+        {
+            _src = null;
+            _dic = new Dictionary<string, List<Area>>();
+            if (Load(xmlFileName))
+            {
+                if (File.Exists(_imagefilename))
+                {
+                    _src = (Bitmap)Bitmap.FromFile(_imagefilename);
+                    _src = _src.Clone(Correctrect, _src.PixelFormat);
+                }
+            }
+        }
         public void Clear(){
         	ResetData();
         	_dic.Clear();
@@ -128,7 +141,7 @@ namespace ARTemplate
                             if (type == null || rect == null)
                                 continue;
                             string Type = type.InnerText;
-                            Rectangle r = Tools.StringTools.StringToRectangle(node.InnerText);
+                            Rectangle r = Tools.StringTools.StringToRectangle(rect.InnerText);
                             if (Type == "条形码")
                                 _dic[name].Add(new KaoHaoChoiceArea(r, "考号", Type));
                         }
@@ -295,6 +308,7 @@ namespace ARTemplate
             get;
             set;
         }
+        public Dictionary<string, List<Area>> Dic { get { return _dic; } }
         private Bitmap _src;
         private string _imagefilename;
         private Dictionary< string, List<Area>> _dic;

@@ -25,11 +25,16 @@ namespace ScanTemplate
             return Math.Asin( (P1.X-P0.X)/r );
         }
 
-        public void SetPaper(Point P0, Point P1, Point P2)
+        public double SetPaper(Point P0, Point P1, Point P2)
         {
             _P = new List<Point>(){P0,P1,P2};
             _Angle2 = Arcsin(P0, P2);
+            return _Angle2;
 
+        }
+        public void SetPaper(double angle)
+        {
+            _Angle2 = angle;
         }
         public Point GetCorrectPoint(int x, int y) //相对0，0而言
         {

@@ -38,6 +38,7 @@
             this.toolStripButtonImportTemplate = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonDP = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonDId = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButtonName = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonDX = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonDF = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonZoomout = new System.Windows.Forms.ToolStripButton();
@@ -54,7 +55,6 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.textBoxMessage = new System.Windows.Forms.TextBox();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.toolStripButtonName = new System.Windows.Forms.ToolStripButton();
             this.toolStrip1.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -98,7 +98,7 @@
             this.toolStripButtonCloseAndOutImages});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(881, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(850, 25);
             this.toolStrip1.TabIndex = 1;
             // 
             // toolStripButtonSaveTemplate
@@ -136,6 +136,16 @@
             this.toolStripButtonDId.Size = new System.Drawing.Size(60, 22);
             this.toolStripButtonDId.Text = "定义考号";
             this.toolStripButtonDId.Click += new System.EventHandler(this.toolStripButtonDId_Click);
+            // 
+            // toolStripButtonName
+            // 
+            this.toolStripButtonName.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.toolStripButtonName.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButtonName.Image")));
+            this.toolStripButtonName.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripButtonName.Name = "toolStripButtonName";
+            this.toolStripButtonName.Size = new System.Drawing.Size(60, 22);
+            this.toolStripButtonName.Text = "定义姓名";
+            this.toolStripButtonName.Click += new System.EventHandler(this.toolStripButtonName_Click);
             // 
             // toolStripButtonDX
             // 
@@ -283,9 +293,9 @@
             // pictureBox1
             // 
             this.pictureBox1.AccessibleRole = System.Windows.Forms.AccessibleRole.ScrollBar;
-            this.pictureBox1.Location = new System.Drawing.Point(3, 0);
+            this.pictureBox1.Location = new System.Drawing.Point(3, 3);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(718, 622);
+            this.pictureBox1.Size = new System.Drawing.Size(786, 619);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
@@ -300,16 +310,6 @@
             this.textBoxMessage.Name = "textBoxMessage";
             this.textBoxMessage.Size = new System.Drawing.Size(151, 21);
             this.textBoxMessage.TabIndex = 2;
-            // 
-            // toolStripButtonName
-            // 
-            this.toolStripButtonName.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripButtonName.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButtonName.Image")));
-            this.toolStripButtonName.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonName.Name = "toolStripButtonName";
-            this.toolStripButtonName.Size = new System.Drawing.Size(60, 22);
-            this.toolStripButtonName.Text = "定义姓名";
-            this.toolStripButtonName.Click += new System.EventHandler(this.toolStripButtonName_Click);
             // 
             // FormTemplate
             // 
