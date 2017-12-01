@@ -6,7 +6,7 @@ using System.Drawing;
 
 namespace ScanTemplate
 {
-    class AutoAngle
+     public class AutoAngle
     {
         private List<Point> _T;
         private List<Point> _P;

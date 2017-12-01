@@ -59,6 +59,12 @@
     <Compile Include="FormM.Designer.cs">
       <DependentUpon>FormM.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormVerify.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormVerify.Designer.cs">
+      <DependentUpon>FormVerify.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form\Components.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -79,6 +85,9 @@
     <Compile Include="tools\DataTableTools.cs" />
     <EmbeddedResource Include="FormM.resx">
       <DependentUpon>FormM.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormVerify.resx">
+      <DependentUpon>FormVerify.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form\FormTemplate.resx">
       <DependentUpon>FormTemplate.cs</DependentUpon>

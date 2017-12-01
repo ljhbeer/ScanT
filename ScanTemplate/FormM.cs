@@ -25,6 +25,7 @@ namespace ScanTemplate
 		private String _runmsg;
 		private DataTable _rundt;
 		private ZXing.BarcodeReader _br;
+        private string _exportdata;
 		public FormM()
 		{
 			InitializeComponent();
@@ -34,7 +35,7 @@ namespace ScanTemplate
 			_rundr = null;
 			_runnameList=null;
 			_runmsg = "";
-			
+            _exportdata = "";
 			//for 二维码
 			DecodingOptions decodeOption = new DecodingOptions();
 			decodeOption.PossibleFormats = new List<BarcodeFormat>() {
@@ -55,8 +56,8 @@ namespace ScanTemplate
 			foreach (string s in NameListFromDir(templatepath,".xml"))
 			{
 				//TODO: 使用类，显示相关信息
-				
-				listBoxTemplate.Items.Add( new TInfo(s));
+                string value = s.Substring(s.LastIndexOf("\\")+1);
+				listBoxTemplate.Items.Add( new ValueTag(value,s));
 			}
 			panel3.AutoScroll = true;
 		}
@@ -104,7 +105,7 @@ namespace ScanTemplate
 			if (nameList.Count == 0) return;
 			string filename = nameList[0];
 			
-			string templatefile =((TInfo) listBoxTemplate.SelectedItem).Str;
+			string templatefile =((ValueTag) listBoxTemplate.SelectedItem).Tag.ToString();
 			CreateTemplate(filename,templatefile);
 		}
 		private void ButtonScanClick(object sender, EventArgs e)
@@ -122,6 +123,22 @@ namespace ScanTemplate
 			DetectAllImgs(dr, nameList);
 			
 		}
+        private void buttonVerify_Click(object sender, EventArgs e)
+        {
+            if (_artemplate == null || _rundt == null || _rundt.Rows.Count == 0)
+                return;
+            this.Hide();
+            FormVerify f = new FormVerify(_artemplate, _rundt, _angle);
+            if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                MessageBox.Show("校验成功");
+                MessageBox.Show("是否保存校验结果");
+            }
+            else
+            {
+                MessageBox.Show("校验失败");
+            }
+        }
 		private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			if (listBox1.SelectedIndex == -1) return;
@@ -131,30 +148,10 @@ namespace ScanTemplate
 			for(int i=0; i<listBoxTemplate.Items.Count; i++){
 				if(listBoxTemplate.Items[i].ToString().StartsWith(txt)){
 					listBoxTemplate.SelectedIndex = i;
-					string templatefilename = ((TInfo)listBoxTemplate.SelectedItem).Str;
-					string dataname = templatefilename .Replace(".xml", ".txt");
-
-					if (_artemplate == null)
-					{
-						Template t = new Template(templatefilename);
-						if (t.Image != null)
-						{
-							_artemplate = t;
-							List<Point> ListPoint = new List<Point>();
-							foreach (Area I in t.Dic["特征点"])
-							{
-								ListPoint.Add(I.ImgArea.Location);
-							}
-							if(ListPoint.Count==3)
-								_angle = new AutoAngle( ListPoint);
-						}
-					}
-
-					if (File.Exists(dataname))
-					{
-						listBoxData.Items.Clear();
-						listBoxData.Items.Add(listBox1.SelectedItem);
-					}
+					string templatefilename = ((ValueTag)listBoxTemplate.SelectedItem).Tag.ToString();
+                    if (_artemplate == null)
+                    InitTemplate(templatefilename);
+                    InitListBoxData(templatefilename );
 					unselected = false;
 					break;
 				}
@@ -162,11 +159,50 @@ namespace ScanTemplate
 			if(unselected)
 				listBoxTemplate.SelectedIndex = -1;
 		}
+        private void InitTemplate(string templatefilename)
+        {
+            {
+                Template t = new Template(templatefilename);
+                if (t.Image != null)
+                {
+                    _artemplate = t;
+                    List<Point> ListPoint = new List<Point>();
+                    foreach (Area I in t.Dic["特征点"])
+                    {
+                        ListPoint.Add(I.ImgArea.Location);
+                    }
+                    if (ListPoint.Count == 3)
+                        _angle = new AutoAngle(ListPoint);
+                }
+            }
+        }
+        private void InitListBoxData(string templatefilename)
+        {
+            string dataname = templatefilename.Replace(".xml", ".txt");
+            string dir = templatefilename.Substring(0, templatefilename.LastIndexOf("\\"));
+            List<string> data = NameListFromDir(dir, ".txt");
+            data = data.Where(r => r.Contains(templatefilename.Replace(".xml", ""))).ToList();
+            listBoxData.Items.Clear();
+            foreach (string s in data)
+            {
+                string value = s.Substring(s.LastIndexOf("\\")+1);
+                listBoxData.Items.Add(new ValueTag(value,s));
+            }
+        }
+        private void listBoxTemplate_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listBoxTemplate.SelectedIndex == -1) return;
+            string templatefilename = ((ValueTag)listBoxTemplate.SelectedItem).Tag.ToString();
+            InitTemplate(templatefilename);
+            InitListBoxData(templatefilename);
+        }
 		private void listBoxData_SelectedIndexChanged(object sender, EventArgs e)
 		{
-			if (listBox1.SelectedIndex == -1) return;
-			string dataname = ((TInfo)listBoxTemplate.SelectedItem).Str.Replace(".xml", ".txt");
+			if (listBoxData.SelectedIndex == -1) return;
+			string dataname = ((ValueTag)listBoxData.SelectedItem).Tag.ToString();
 			//TODO： 检测是否导入已有数据
+            if (!File.Exists(dataname))
+                return;
 			
 			InitRundt(_artemplate);
 			dgv.DataSource = _rundt;
@@ -246,7 +282,7 @@ namespace ScanTemplate
 			panel1.Invalidate();
 			panel1.AutoScrollPosition = new Point(-S.X, -S.Y);
 		}
-		private void DrawInfoBmp(Bitmap bmp, double angle)
+		private void  DrawInfoBmp(Bitmap bmp, double angle)
 		{
 			if(_angle!=null)
 				_angle.SetPaper(angle);
@@ -352,15 +388,39 @@ namespace ScanTemplate
 		}
 		public void RunDetectAllImg(){
 			StringBuilder sb = new StringBuilder();
-			foreach (string s in _runnameList)
-			{
-				_runmsg = DetectAllImg(_rundr, s).ToString();
-				sb.Append(_runmsg);
-				this.Invoke( new MyInvoke(ShowMsg));
-				Thread.Sleep(100);
-			}
-			File.WriteAllText("allimport.txt", sb.ToString());
+            foreach (string s in _runnameList)
+            {
+                _runmsg = DetectAllImg(_rundr, s).ToString();
+                sb.Append(_runmsg);
+                this.Invoke(new MyInvoke(ShowMsg));
+                Thread.Sleep(100);
+            }
+            _exportdata = sb.ToString();
+            this.Invoke(new MyInvoke(ExportData));
 		}
+        private void ExportData()
+        {
+            FileInfo fi = new FileInfo(_artemplate.Filename);
+            string path = fi.Directory.Parent.Parent.FullName + "\\template\\";
+            string filename = path + fi.Directory.Name + "_" + _artemplate.GetTemplateName() + ".txt";
+            if (File.Exists(filename))
+            {
+                SaveFileDialog saveFileDialog2 = new SaveFileDialog();
+                saveFileDialog2.FileName = filename;
+                saveFileDialog2.Filter = "txt files (*.txt)|*.txt";
+                saveFileDialog2.Title = "Save Data file";
+                if (saveFileDialog2.ShowDialog() == DialogResult.OK)
+                {
+                    filename = saveFileDialog2.FileName;
+                }
+                else
+                {
+                    filename = "allimportdata.txt";
+                }
+            }
+            File.WriteAllText(filename, _exportdata);
+            _exportdata = "";
+        }
 		public void ShowMsg(){
 			string[] ss = _runmsg.Split(',');
 
@@ -473,18 +533,19 @@ namespace ScanTemplate
 			return new List<string>();
 		}
 
-	}
-	public class TInfo{
-		public TInfo(string s){
-			this.Str  = s;
-		}
-		public string Str;
-		public override string ToString()
-		{
-			if(Str.Contains("\\"))
-				return Str.Substring( Str.LastIndexOf("\\")+1);
-			return Str;
-		}
-		
-	}
+	}	
+    public class ValueTag
+    {
+        public ValueTag(string value, Object tag)
+        {
+            this.Value = value;
+            this.Tag = tag;
+        }
+        public Object Tag;
+        public String Value;
+        public override string ToString()
+        {
+            return Value;
+        }
+    }
 }

@@ -49,6 +49,7 @@
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.buttonLeftHide = new System.Windows.Forms.Button();
             this.buttonRightHide = new System.Windows.Forms.Button();
+            this.buttonVerify = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -101,7 +102,7 @@
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 625);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
@@ -119,7 +120,7 @@
             this.TLP.Name = "TLP";
             this.TLP.RowCount = 1;
             this.TLP.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.TLP.Size = new System.Drawing.Size(1258, 590);
+            this.TLP.Size = new System.Drawing.Size(1258, 585);
             this.TLP.TabIndex = 0;
             // 
             // dgv
@@ -129,12 +130,13 @@
             this.dgv.Location = new System.Drawing.Point(254, 3);
             this.dgv.Name = "dgv";
             this.dgv.RowTemplate.Height = 23;
-            this.dgv.Size = new System.Drawing.Size(748, 584);
+            this.dgv.Size = new System.Drawing.Size(748, 579);
             this.dgv.TabIndex = 1;
             this.dgv.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgv_CellContentClick);
             // 
             // panel1
             // 
+            this.panel1.AutoScroll = true;
             this.panel1.BackColor = System.Drawing.SystemColors.Control;
             this.panel1.Controls.Add(this.textBox1);
             this.panel1.Controls.Add(this.listBoxData);
@@ -149,12 +151,12 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(245, 584);
+            this.panel1.Size = new System.Drawing.Size(245, 579);
             this.panel1.TabIndex = 2;
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(8, 416);
+            this.textBox1.Location = new System.Drawing.Point(8, 389);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(228, 21);
             this.textBox1.TabIndex = 11;
@@ -164,7 +166,7 @@
             // 
             this.listBoxData.FormattingEnabled = true;
             this.listBoxData.ItemHeight = 12;
-            this.listBoxData.Location = new System.Drawing.Point(8, 443);
+            this.listBoxData.Location = new System.Drawing.Point(8, 416);
             this.listBoxData.Name = "listBoxData";
             this.listBoxData.Size = new System.Drawing.Size(228, 100);
             this.listBoxData.TabIndex = 10;
@@ -172,7 +174,7 @@
             // 
             // buttonScan
             // 
-            this.buttonScan.Location = new System.Drawing.Point(8, 549);
+            this.buttonScan.Location = new System.Drawing.Point(8, 522);
             this.buttonScan.Name = "buttonScan";
             this.buttonScan.Size = new System.Drawing.Size(135, 32);
             this.buttonScan.TabIndex = 9;
@@ -186,8 +188,9 @@
             this.listBoxTemplate.ItemHeight = 12;
             this.listBoxTemplate.Location = new System.Drawing.Point(8, 247);
             this.listBoxTemplate.Name = "listBoxTemplate";
-            this.listBoxTemplate.Size = new System.Drawing.Size(228, 160);
+            this.listBoxTemplate.Size = new System.Drawing.Size(228, 136);
             this.listBoxTemplate.TabIndex = 8;
+            this.listBoxTemplate.SelectedIndexChanged += new System.EventHandler(this.listBoxTemplate_SelectedIndexChanged);
             // 
             // buttonUseTemplate
             // 
@@ -253,7 +256,7 @@
             this.panel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel3.Location = new System.Drawing.Point(1008, 3);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(247, 584);
+            this.panel3.Size = new System.Drawing.Size(247, 579);
             this.panel3.TabIndex = 3;
             // 
             // pictureBox1
@@ -280,13 +283,14 @@
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 50F));
             this.tableLayoutPanel2.Controls.Add(this.buttonLeftHide, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.buttonRightHide, 5, 0);
+            this.tableLayoutPanel2.Controls.Add(this.buttonVerify, 1, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 599);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 594);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 1;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(1258, 23);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(1258, 28);
             this.tableLayoutPanel2.TabIndex = 1;
             // 
             // buttonLeftHide
@@ -294,7 +298,7 @@
             this.buttonLeftHide.Dock = System.Windows.Forms.DockStyle.Fill;
             this.buttonLeftHide.Location = new System.Drawing.Point(3, 3);
             this.buttonLeftHide.Name = "buttonLeftHide";
-            this.buttonLeftHide.Size = new System.Drawing.Size(44, 17);
+            this.buttonLeftHide.Size = new System.Drawing.Size(44, 22);
             this.buttonLeftHide.TabIndex = 0;
             this.buttonLeftHide.Text = "<<";
             this.buttonLeftHide.UseVisualStyleBackColor = true;
@@ -309,6 +313,16 @@
             this.buttonRightHide.Text = ">>";
             this.buttonRightHide.UseVisualStyleBackColor = true;
             this.buttonRightHide.Click += new System.EventHandler(this.buttonRightHide_Click);
+            // 
+            // buttonVerify
+            // 
+            this.buttonVerify.Location = new System.Drawing.Point(53, 3);
+            this.buttonVerify.Name = "buttonVerify";
+            this.buttonVerify.Size = new System.Drawing.Size(44, 22);
+            this.buttonVerify.TabIndex = 4;
+            this.buttonVerify.Text = "校验";
+            this.buttonVerify.UseVisualStyleBackColor = true;
+            this.buttonVerify.Click += new System.EventHandler(this.buttonVerify_Click);
             // 
             // FormM
             // 
@@ -357,6 +371,7 @@
         private System.Windows.Forms.Button buttonGo;
         private System.Windows.Forms.Panel panel3;
         private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.ListBox listBoxData;        
+        private System.Windows.Forms.ListBox listBoxData;
+        private System.Windows.Forms.Button buttonVerify;        
     }
 }
