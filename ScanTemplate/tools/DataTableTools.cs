@@ -29,6 +29,14 @@ namespace Tools
                 {
                     dc.DataType = typeof(double);
                 }
+                else if ( columntitles[count].Contains("是否") )
+                {
+                    dc.DataType = typeof(bool);
+                }
+                else if ( columntitles[count].Contains("学号") )
+                {
+                    dc.DataType = typeof(Object);
+                }
                 else if ("img图片".Contains(columntitles[count]) || columntitles[count].Contains("图片"))
                 {
                     dc.DataType = typeof(System.Drawing.Image);

@@ -133,15 +133,97 @@ namespace ScanTemplate
 			if (_artemplate == null || _rundt == null || _rundt.Rows.Count == 0)
 				return;
 			this.Hide();
-			FormVerify f = new FormVerify(_artemplate, _rundt, _angle);
-			if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-			{
-				MessageBox.Show("校验成功");
-				MessageBox.Show("是否保存校验结果");
+			//for 考号
+			VerifyKaoHao();
+			//for 选择题
+			VerifyXzt();
+			this.Show();
+		}
+		//暂时不起作用
+		private void VerifyKaoHao()
+		{
+			DataTable dt = Tools.DataTableTools.ConstructDataTable(new string[] {
+			                                                       	"学号",
+			                                                       	"图片",
+			                                                       	"姓名",
+			                                                       	"是否修改"
+			                                                       });
+			Rectangle r = _artemplate.Dic["考号"][0].ImgArea;
+			foreach (DataRow dr in _rundt.Rows) {
+				if (dr["考号"].ToString() == "") {
+					string fn = dr["文件名"].ToString().Replace("LJH\\", "LJH\\Correct\\");
+					if (File.Exists(fn)) {
+						double angle = (double)(dr["校验角度"]);
+						Bitmap bmp = (Bitmap)Bitmap.FromFile(fn);
+						if (_angle != null)
+							_angle.SetPaper(angle);
+						DataRow ndr = dt.NewRow();
+						ndr["学号"] = new ValueTag(dr["考号"].ToString(), dr);
+
+						Bitmap nbmp = bmp.Clone(r, bmp.PixelFormat);
+						ndr["图片"] = nbmp;
+						ndr["姓名"] = "";
+						ndr["是否修改"] = false;
+						dt.Rows.Add(ndr);
+					}
+				}
 			}
-			else
-			{
-				MessageBox.Show("校验失败");
+			if(dt.Rows.Count>0){
+				MessageBox.Show("暂未实现，待修改");
+				FormVerify f = new FormVerify(dt);
+				if (f.ShowDialog() != System.Windows.Forms.DialogResult.OK) {
+					MessageBox.Show("校验失败");
+				}
+				//修改之后
+				dt.Rows.Clear();
+			}
+		}
+		private void VerifyXzt()
+		{
+			DataTable dt = Tools.DataTableTools.ConstructDataTable(new string[] {
+			                                                       	"学号",
+			                                                       	"题号",
+			                                                       	"图片",
+			                                                       	"你的答案",
+			                                                       	"A",
+			                                                       	"B",
+			                                                       	"C",
+			                                                       	"D",
+			                                                       	"是否多选",
+			                                                       	"是否修改"
+			                                                       });
+			int xztcnt = _artemplate.XztRect.Count;
+			int runcnt = 0;
+			foreach (DataRow dr in _rundt.Rows) {
+				runcnt++;
+				bool b = false;
+				int xi = 0;
+				for (; xi < xztcnt; xi++) {
+					if (!"ABCD".Contains(dr["x" + (xi + 1)].ToString()) || dr["x" + (xi + 1)].ToString().Length > 1) {
+						b = true;
+						break;
+					}
+				}
+				if (b) {
+					string fn = dr["文件名"].ToString().Replace("LJH\\", "LJH\\Correct\\");
+					if (File.Exists(fn)) {
+						double angle = (double)(dr["校验角度"]);
+						Bitmap bmp = (Bitmap)Bitmap.FromFile(fn);
+						if (_angle != null)
+							_angle.SetPaper(angle);
+						AddDataToDt(dr, bmp, dt);
+					}
+				}
+				if (b || runcnt == _rundt.Rows.Count) {
+					if (dt.Rows.Count > 20 || (runcnt == _rundt.Rows.Count && dt.Rows.Count > 0)) {
+						FormVerify f = new FormVerify(dt);
+						if (f.ShowDialog() != System.Windows.Forms.DialogResult.OK) {
+							MessageBox.Show("校验失败");
+						}
+						//修改之后
+						dt.Rows.Clear();
+					}
+				}
 			}
 		}
 		private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -349,7 +431,7 @@ namespace ScanTemplate
 		}
 		private StringBuilder DetectAllImg(MyDetectFeatureRectAngle dr, string s,List<string> title=null)
 		{
-			if(dr==null ){			
+			if(dr==null ){
 				title.Clear();
 				title.Add("文件名");
 				title.Add("CorrectRect");
@@ -459,7 +541,7 @@ namespace ScanTemplate
 				}
 			}
 			List<string> colnames = new List<string> {"序号","姓名"};
-			//init _exporttitle	
+			//init _exporttitle
 			if(_exporttitle==null)
 				_exporttitle = new List<string>();
 			DetectAllImg(null,"",_exporttitle);
@@ -484,7 +566,7 @@ namespace ScanTemplate
 				_rundt.Rows.Add(dr);
 			}
 		}
-	 	private Dictionary<string, int> ConstructTitlePos(ref int xztpos)
+		private Dictionary<string, int> ConstructTitlePos(ref int xztpos)
 		{
 			Dictionary<string, int> titlepos = new Dictionary<string, int>();
 			xztpos = 0;
@@ -508,23 +590,45 @@ namespace ScanTemplate
 						dr[kv.Key] = ss[kv.Value];
 				}
 				if(xztpos>0){
-				string[] xx = ss[xztpos].Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries);
-				for (int ii = 0; ii < xx.Length; ii++)
-					dr["x" + (ii + 1)] = xx[ii];
+					string[] xx = ss[xztpos].Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries);
+					for (int ii = 0; ii < xx.Length; ii++)
+						dr["x" + (ii + 1)] = xx[ii];
+				}
+			}
+		}
+		private void AddDataToDt(DataRow dr, Bitmap bmp, DataTable dt)
+		{
+			double angle = (double)( dr["校验角度"]);
+			if (_angle != null)
+				_angle.SetPaper(angle);
+			for (int i = 0; i < _artemplate.XztRect.Count; i++) {
+				string value = dr["x" + (i + 1)].ToString();
+				if (value.Length != 1 || !"ABCD".Contains(value)) {
+					DataRow ndr = dt.NewRow();
+					ndr["学号"] = new ValueTag(dr["考号"].ToString(), dr);
+					ndr["题号"] = "x" + (i + 1);
+					Rectangle r = _artemplate.XztRect[i];
+					//r.Location = _angle.GetCorrectPoint(r.X,r.Y);
+					Bitmap nbmp = bmp.Clone(r, bmp.PixelFormat);
+					ndr["图片"] = nbmp;
+					ndr["你的答案"] = value;
+					ndr["是否多选"] = false;
+					ndr["是否修改"] = false;
+					dt.Rows.Add(ndr);
 				}
 			}
 		}
 		public void ShowMsg(){
 			string[] ss = _runmsg.Split(',');
 
-			DataRow dr = _rundt.NewRow();			
+			DataRow dr = _rundt.NewRow();
 			MsgToDr(_titlepos, _xztpos, ss, ref dr);
 //			dr["文件名"] = ss[0];
 //			dr["校验"] = Convert.ToDouble( ss[2] );
 //			dr["序号"]=_rundt.Rows.Count+1;
 //			if(ss.Length>4)
 //				dr["考号"] = ss[4];
-//			
+//
 //			string[] xx = ss[3].Split(new string[]{"|"},StringSplitOptions.RemoveEmptyEntries);
 //			for(int i=0; i<xx.Length; i++)
 //				dr[ "x"+(i+1)] = xx[i];
