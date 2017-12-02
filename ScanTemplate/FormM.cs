@@ -25,7 +25,10 @@ namespace ScanTemplate
 		private String _runmsg;
 		private DataTable _rundt;
 		private ZXing.BarcodeReader _br;
-        private string _exportdata;
+		private string _exportdata;
+		private List<string> _exporttitle;
+		private Dictionary<string, int> _titlepos;
+		private int _xztpos;
 		public FormM()
 		{
 			InitializeComponent();
@@ -35,7 +38,9 @@ namespace ScanTemplate
 			_rundr = null;
 			_runnameList=null;
 			_runmsg = "";
-            _exportdata = "";
+			_exportdata = "";
+			_xztpos = -1;
+			_titlepos =  new Dictionary<string, int>();
 			//for 二维码
 			DecodingOptions decodeOption = new DecodingOptions();
 			decodeOption.PossibleFormats = new List<BarcodeFormat>() {
@@ -56,7 +61,7 @@ namespace ScanTemplate
 			foreach (string s in NameListFromDir(templatepath,".xml"))
 			{
 				//TODO: 使用类，显示相关信息
-                string value = s.Substring(s.LastIndexOf("\\")+1);
+				string value = s.Substring(s.LastIndexOf("\\")+1);
 				listBoxTemplate.Items.Add( new ValueTag(value,s));
 			}
 			panel3.AutoScroll = true;
@@ -123,22 +128,22 @@ namespace ScanTemplate
 			DetectAllImgs(dr, nameList);
 			
 		}
-        private void buttonVerify_Click(object sender, EventArgs e)
-        {
-            if (_artemplate == null || _rundt == null || _rundt.Rows.Count == 0)
-                return;
-            this.Hide();
-            FormVerify f = new FormVerify(_artemplate, _rundt, _angle);
-            if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                MessageBox.Show("校验成功");
-                MessageBox.Show("是否保存校验结果");
-            }
-            else
-            {
-                MessageBox.Show("校验失败");
-            }
-        }
+		private void buttonVerify_Click(object sender, EventArgs e)
+		{
+			if (_artemplate == null || _rundt == null || _rundt.Rows.Count == 0)
+				return;
+			this.Hide();
+			FormVerify f = new FormVerify(_artemplate, _rundt, _angle);
+			if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+			{
+				MessageBox.Show("校验成功");
+				MessageBox.Show("是否保存校验结果");
+			}
+			else
+			{
+				MessageBox.Show("校验失败");
+			}
+		}
 		private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			if (listBox1.SelectedIndex == -1) return;
@@ -149,9 +154,9 @@ namespace ScanTemplate
 				if(listBoxTemplate.Items[i].ToString().StartsWith(txt)){
 					listBoxTemplate.SelectedIndex = i;
 					string templatefilename = ((ValueTag)listBoxTemplate.SelectedItem).Tag.ToString();
-                    if (_artemplate == null)
-                    InitTemplate(templatefilename);
-                    InitListBoxData(templatefilename );
+					if (_artemplate == null)
+						InitTemplate(templatefilename);
+					InitListBoxData(templatefilename );
 					unselected = false;
 					break;
 				}
@@ -159,87 +164,54 @@ namespace ScanTemplate
 			if(unselected)
 				listBoxTemplate.SelectedIndex = -1;
 		}
-        private void InitTemplate(string templatefilename)
-        {
-            {
-                Template t = new Template(templatefilename);
-                if (t.Image != null)
-                {
-                    _artemplate = t;
-                    List<Point> ListPoint = new List<Point>();
-                    foreach (Area I in t.Dic["特征点"])
-                    {
-                        ListPoint.Add(I.ImgArea.Location);
-                    }
-                    if (ListPoint.Count == 3)
-                        _angle = new AutoAngle(ListPoint);
-                }
-            }
-        }
-        private void InitListBoxData(string templatefilename)
-        {
-            string dataname = templatefilename.Replace(".xml", ".txt");
-            string dir = templatefilename.Substring(0, templatefilename.LastIndexOf("\\"));
-            List<string> data = NameListFromDir(dir, ".txt");
-            data = data.Where(r => r.Contains(templatefilename.Replace(".xml", ""))).ToList();
-            listBoxData.Items.Clear();
-            foreach (string s in data)
-            {
-                string value = s.Substring(s.LastIndexOf("\\")+1);
-                listBoxData.Items.Add(new ValueTag(value,s));
-            }
-        }
-        private void listBoxTemplate_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (listBoxTemplate.SelectedIndex == -1) return;
-            string templatefilename = ((ValueTag)listBoxTemplate.SelectedItem).Tag.ToString();
-            InitTemplate(templatefilename);
-            InitListBoxData(templatefilename);
-        }
+		private void InitTemplate(string templatefilename)
+		{
+			{
+				Template t = new Template(templatefilename);
+				if (t.Image != null)
+				{
+					_artemplate = t;
+					List<Point> ListPoint = new List<Point>();
+					foreach (Area I in t.Dic["特征点"])
+					{
+						ListPoint.Add(I.ImgArea.Location);
+					}
+					if (ListPoint.Count == 3)
+						_angle = new AutoAngle(ListPoint);
+				}
+			}
+		}
+		private void InitListBoxData(string templatefilename)
+		{
+			string dataname = templatefilename.Replace(".xml", ".txt");
+			string dir = templatefilename.Substring(0, templatefilename.LastIndexOf("\\"));
+			List<string> data = NameListFromDir(dir, ".txt");
+			data = data.Where(r => r.Contains(templatefilename.Replace(".xml", ""))).ToList();
+			listBoxData.Items.Clear();
+			foreach (string s in data)
+			{
+				string value = s.Substring(s.LastIndexOf("\\")+1);
+				listBoxData.Items.Add(new ValueTag(value,s));
+			}
+		}
+		private void listBoxTemplate_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (listBoxTemplate.SelectedIndex == -1) return;
+			string templatefilename = ((ValueTag)listBoxTemplate.SelectedItem).Tag.ToString();
+			InitTemplate(templatefilename);
+			InitListBoxData(templatefilename);
+		}
 		private void listBoxData_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			if (listBoxData.SelectedIndex == -1) return;
 			string dataname = ((ValueTag)listBoxData.SelectedItem).Tag.ToString();
 			//TODO： 检测是否导入已有数据
-            if (!File.Exists(dataname))
-                return;
-			
+			if (!File.Exists(dataname))
+				return;
 			InitRundt(_artemplate);
 			dgv.DataSource = _rundt;
 			InitDgvUI();
-			string[] ls = File.ReadAllLines(dataname);
-			for (int i = 0; i < ls.Length; i++)
-			{
-				string[] ss = ls[i].Split(',');
-				DataRow dr = _rundt.NewRow();
-				dr["序号"] = _rundt.Rows.Count + 1;
-				if (ss.Length > 3)
-				{
-					dr["文件名"] = ss[0];
-					dr["校验"] = Convert.ToDouble(ss[2]);
-//					dr["选择题"] = ss[3];
-					string[] xx = ss[3].Split(new string[]{"|"},StringSplitOptions.RemoveEmptyEntries);
-					for(int ii=0; ii<xx.Length; ii++)
-						dr[ "x"+(ii+1)] = xx[ii];
-					if (ss.Length > 4)
-						dr["考号"] = ss[4];
-				}
-				_rundt.Rows.Add(dr);
-			}
-
-		}
-		private void dgv_CellContentClick(object sender, DataGridViewCellEventArgs e)
-		{
-			if (e.RowIndex == -1 || _rundt == null || e.ColumnIndex == -1 || _angle==null || _artemplate==null )
-				return;
-			string fn = _rundt.Rows[e.RowIndex]["文件名"].ToString().Replace("LJH\\","LJH\\Correct\\");
-			if (File.Exists(fn))
-			{
-				double angle = (double)(_rundt.Rows[e.RowIndex]["校验"]);
-				Bitmap bmp =(Bitmap) Bitmap.FromFile(fn);
-				DrawInfoBmp(bmp,angle);
-				//pictureBox1.Image = bmp;
-			}
+			InitDgvData(dataname);
 		}
 		private void pictureBox1_MouseEnter(object sender, EventArgs e)
 		{
@@ -268,6 +240,20 @@ namespace ScanTemplate
 				Zoomrat(f + 1, e.Location);
 			}
 		}
+		private void dgv_CellContentClick(object sender, DataGridViewCellEventArgs e)
+		{
+			if (e.RowIndex == -1 || _rundt == null || e.ColumnIndex == -1 || _angle==null || _artemplate==null )
+				return;
+			string fn = _rundt.Rows[e.RowIndex]["文件名"].ToString().Replace("LJH\\","LJH\\Correct\\");
+			if (File.Exists(fn))
+			{
+				double angle = (double)(_rundt.Rows[e.RowIndex]["校验角度"]);
+				Bitmap bmp =(Bitmap) Bitmap.FromFile(fn);
+				DrawInfoBmp(bmp,angle);
+				//pictureBox1.Image = bmp;
+			}
+		}
+		//dr["选择题"] = ss[3];
 		private void Zoomrat(double rat, Point e)
 		{
 			Bitmap bitmap_show = (Bitmap)pictureBox1.Image;
@@ -344,7 +330,7 @@ namespace ScanTemplate
 				f.ShowDialog();
 				this.Show();
 			}
-		}		
+		}
 		private void DetectAllImgs(MyDetectFeatureRectAngle dr, List<string> nameList)
 		{
 			FileInfo fi = new FileInfo(nameList[0]);
@@ -361,89 +347,24 @@ namespace ScanTemplate
 			Thread thread=new Thread(new ThreadStart(RunDetectAllImg));
 			thread.Start();
 		}
-		private void InitDgvUI()
+		private StringBuilder DetectAllImg(MyDetectFeatureRectAngle dr, string s,List<string> title=null)
 		{
-			foreach (DataGridViewColumn dc in dgv.Columns)
-				if (dc.Name.StartsWith("x"))
-					dc.Width = 20;
-		}
-		private void InitRundt(Template _artemplate)
-		{
-			int xztcnt = 0;
-			if (_artemplate.Dic.ContainsKey("选择题")) {
-				foreach (Area I in _artemplate.Dic["选择题"]) {
-					xztcnt += ((SingleChoiceArea)I).Count;
-				}
+			if(dr==null ){			
+				title.Clear();
+				title.Add("文件名");
+				title.Add("CorrectRect");
+				title.Add("校验角度");
+				title.Add("选择题");
+				if(_artemplate.Dic.ContainsKey("考号") && _artemplate.Dic["考号"].Count>0)
+					title.Add("考号");
+				return null;
 			}
-			List<string> colnames = new List<string> {
-				"序号",
-				"文件名",
-				"校验",
-				"姓名",
-				"考号"
-			};
-			for (int i = 0; i < xztcnt; i++)
-				colnames.Add("x" + (i + 1));
-			_rundt = Tools.DataTableTools.ConstructDataTable(colnames.ToArray());
-		}
-		public void RunDetectAllImg(){
-			StringBuilder sb = new StringBuilder();
-            foreach (string s in _runnameList)
-            {
-                _runmsg = DetectAllImg(_rundr, s).ToString();
-                sb.Append(_runmsg);
-                this.Invoke(new MyInvoke(ShowMsg));
-                Thread.Sleep(100);
-            }
-            _exportdata = sb.ToString();
-            this.Invoke(new MyInvoke(ExportData));
-		}
-        private void ExportData()
-        {
-            FileInfo fi = new FileInfo(_artemplate.Filename);
-            string path = fi.Directory.Parent.Parent.FullName + "\\template\\";
-            string filename = path + fi.Directory.Name + "_" + _artemplate.GetTemplateName() + ".txt";
-            if (File.Exists(filename))
-            {
-                SaveFileDialog saveFileDialog2 = new SaveFileDialog();
-                saveFileDialog2.FileName = filename;
-                saveFileDialog2.Filter = "txt files (*.txt)|*.txt";
-                saveFileDialog2.Title = "Save Data file";
-                if (saveFileDialog2.ShowDialog() == DialogResult.OK)
-                {
-                    filename = saveFileDialog2.FileName;
-                }
-                else
-                {
-                    filename = "allimportdata.txt";
-                }
-            }
-            File.WriteAllText(filename, _exportdata);
-            _exportdata = "";
-        }
-		public void ShowMsg(){
-			string[] ss = _runmsg.Split(',');
-
-			DataRow dr = _rundt.NewRow();
-			dr["文件名"] = ss[0];
-			dr["校验"] = Convert.ToDouble( ss[2] );
-			dr["序号"]=_rundt.Rows.Count+1;
-			if(ss.Length>4)
-				dr["考号"] = ss[4];
-			
-			string[] xx = ss[3].Split(new string[]{"|"},StringSplitOptions.RemoveEmptyEntries);
-			for(int i=0; i<xx.Length; i++)
-				dr[ "x"+(i+1)] = xx[i];
-			_rundt.Rows.Add(dr);
-		}
-		private StringBuilder DetectAllImg(MyDetectFeatureRectAngle dr, string s)
-		{
 			Bitmap bmp = (Bitmap)Bitmap.FromFile(s);
 			string str = s.Substring(s.Length - 7, 3);
 			//MyDetectFeatureRectAngle dr = new MyDetectFeatureRectAngle(bmp);
 			Rectangle CorrectRect = dr.Detected(bmp);
 			StringBuilder sb = new StringBuilder();
-			sb.Append(s + "," +  CorrectRect.ToString("-") + ",");
+			sb.Append(s + "," +  CorrectRect.ToString("-") + ",");// 文件名 CorrectRect
 			if (CorrectRect.Width > 0)
 			{
 				//TODO: debug r1 in 001
@@ -453,13 +374,13 @@ namespace ScanTemplate
 				Rectangle r2 = dr.Detected(cr2, bmp);
 
 				
-				sb.Append( _angle.SetPaper(CorrectRect.Location, r1.Location, r2.Location)+"," );
+				sb.Append( _angle.SetPaper(CorrectRect.Location, r1.Location, r2.Location)+"," ); //校验角度
 				Bitmap nbmp = (Bitmap)bmp.Clone(CorrectRect, bmp.PixelFormat);
 				nbmp.Save(s.Replace("LJH\\", "LJH\\Correct\\"));
 				
 				//计算选择题
 				AutoComputeXZT acx = new AutoComputeXZT(_artemplate, _angle, nbmp);
-				sb.Append(acx.ComputeXZT(str));
+				sb.Append(acx.ComputeXZT(str)); //选择题
 				//计算二维码
 				
 				if(_artemplate.Dic.ContainsKey("考号") && _artemplate.Dic["考号"].Count>0){
@@ -486,7 +407,129 @@ namespace ScanTemplate
 			return sb;
 			//MessageBox.Show(sb.ToString());
 		}
+		public void RunDetectAllImg(){
+			StringBuilder sb = new StringBuilder();
+			_titlepos = ConstructTitlePos(ref _xztpos);
+			foreach (string s in _runnameList)
+			{
+				_runmsg = DetectAllImg(_rundr, s).ToString();
+				sb.Append(_runmsg);
+				this.Invoke(new MyInvoke(ShowMsg));
+				Thread.Sleep(100);
+			}
+			_exportdata = sb.ToString();
+			this.Invoke(new MyInvoke(ExportData));
+		}
+		private void ExportData()
+		{
+			FileInfo fi = new FileInfo(_artemplate.Filename);
+			string path = fi.Directory.Parent.Parent.FullName + "\\template\\";
+			string filename = path + fi.Directory.Name + "_" + _artemplate.GetTemplateName() + ".txt";
+			if (File.Exists(filename))
+			{
+				SaveFileDialog saveFileDialog2 = new SaveFileDialog();
+				saveFileDialog2.FileName = filename;
+				saveFileDialog2.Filter = "txt files (*.txt)|*.txt";
+				saveFileDialog2.Title = "Save Data file";
+				if (saveFileDialog2.ShowDialog() == DialogResult.OK)
+				{
+					filename = saveFileDialog2.FileName;
+				}
+				else
+				{
+					filename = "allimportdata.txt";
+				}
+			}
+			
+			File.WriteAllText(filename, string.Join(",",_exporttitle) + "\r\n"+ _exportdata);
+			_exportdata = "";
+		}
+		private void InitDgvUI()
+		{
+			foreach (DataGridViewColumn dc in dgv.Columns)
+				if (dc.Name.StartsWith("x"))
+					dc.Width = 20;
+		}
+		private void InitRundt(Template _artemplate)
+		{
+			int xztcnt = 0;
+			if (_artemplate.Dic.ContainsKey("选择题")) {
+				foreach (Area I in _artemplate.Dic["选择题"]) {
+					xztcnt += ((SingleChoiceArea)I).Count;
+				}
+			}
+			List<string> colnames = new List<string> {"序号","姓名"};
+			//init _exporttitle	
+			if(_exporttitle==null)
+				_exporttitle = new List<string>();
+			DetectAllImg(null,"",_exporttitle);
+			
+			colnames.AddRange( _exporttitle);
+			colnames.Remove("选择题");
+			for (int i = 0; i < xztcnt; i++)
+				colnames.Add("x" + (i + 1));
+			_rundt = Tools.DataTableTools.ConstructDataTable(colnames.ToArray());
+		}
+		private void InitDgvData(string dataname)
+		{
+			int xztpos = 0;
+			string[] ls = File.ReadAllLines(dataname);
+			// 应该根据第一行标题来进行
+			Dictionary<string, int> titlepos = ConstructTitlePos(ref xztpos);
+			for (int i = 1; i < ls.Length; i++) {
+				string[] ss = ls[i].Split(',');
+				DataRow dr = _rundt.NewRow();
+				
+				MsgToDr(titlepos, xztpos, ss, ref dr);
+				_rundt.Rows.Add(dr);
+			}
+		}
+	 	private Dictionary<string, int> ConstructTitlePos(ref int xztpos)
+		{
+			Dictionary<string, int> titlepos = new Dictionary<string, int>();
+			xztpos = 0;
+			for (int i = 0; i < _exporttitle.Count; i++) {
+				if (_exporttitle[i] == "选择题") {
+					xztpos = i;
+				} else {
+					titlepos[_exporttitle[i]] = i;
+				}
+			}
+			return titlepos;
+		}
+		private void MsgToDr(Dictionary<string, int> titlepos, int xztpos, string[] ss, ref DataRow dr)
+		{
+			dr["序号"] = _rundt.Rows.Count + 1;
+			if (ss.Length == _exporttitle.Count) {
+				foreach (KeyValuePair<string, int> kv in titlepos) {
+					if (kv.Key.Contains("校验"))
+						dr[kv.Key] = Convert.ToDouble(ss[kv.Value]);
+					else
+						dr[kv.Key] = ss[kv.Value];
+				}
+				if(xztpos>0){
+				string[] xx = ss[xztpos].Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries);
+				for (int ii = 0; ii < xx.Length; ii++)
+					dr["x" + (ii + 1)] = xx[ii];
+				}
+			}
+		}
+		public void ShowMsg(){
+			string[] ss = _runmsg.Split(',');
 
+			DataRow dr = _rundt.NewRow();			
+			MsgToDr(_titlepos, _xztpos, ss, ref dr);
+//			dr["文件名"] = ss[0];
+//			dr["校验"] = Convert.ToDouble( ss[2] );
+//			dr["序号"]=_rundt.Rows.Count+1;
+//			if(ss.Length>4)
+//				dr["考号"] = ss[4];
+//			
+//			string[] xx = ss[3].Split(new string[]{"|"},StringSplitOptions.RemoveEmptyEntries);
+//			for(int i=0; i<xx.Length; i++)
+//				dr[ "x"+(i+1)] = xx[i];
+			_rundt.Rows.Add(dr);
+		}
 		public static List<string> NameListFromDir(string fidir,string ext =".tif" )
 		{
 			List<string> namelist = new List<string>();
@@ -533,19 +576,19 @@ namespace ScanTemplate
 			return new List<string>();
 		}
 
-	}	
-    public class ValueTag
-    {
-        public ValueTag(string value, Object tag)
-        {
-            this.Value = value;
-            this.Tag = tag;
-        }
-        public Object Tag;
-        public String Value;
-        public override string ToString()
-        {
-            return Value;
-        }
-    }
+	}
+	public class ValueTag
+	{
+		public ValueTag(string value, Object tag)
+		{
+			this.Value = value;
+			this.Tag = tag;
+		}
+		public Object Tag;
+		public String Value;
+		public override string ToString()
+		{
+			return Value;
+		}
+	}
 }

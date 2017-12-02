@@ -25,7 +25,7 @@ namespace Tools
                 {
                     dc.DataType = typeof(int);
                 }
-                else if ("maxscore最大分值校验".Contains(columntitles[count]))
+                else if ("maxscore最大分值校验角度".Contains(columntitles[count]))
                 {
                     dc.DataType = typeof(double);
                 }

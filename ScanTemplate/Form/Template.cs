@@ -17,6 +17,7 @@ namespace ARTemplate
             this._imagefilename = imgpath;
             this._src = bmp.Clone( CorrectRect, bmp.PixelFormat);
             this.Correctrect = CorrectRect;
+            _xztRect = null;
             _dic = new Dictionary<string, List<Area>>();
     
         }
@@ -312,6 +313,31 @@ namespace ARTemplate
         private Bitmap _src;
         private string _imagefilename;
         private Dictionary< string, List<Area>> _dic;
+        
+        private Dictionary<int, Rectangle> _xztRect;
+        public Dictionary<int,Rectangle> XztRect{
+        	get{
+        		if(_xztRect==null){
+        			_xztRect = new Dictionary<int, Rectangle>();
+        			int cnt = 0;
+        			foreach(Area I in _dic["选择题"]){
+        				if(I.HasSubArea()){
+        					int subcnt = 0;
+        					foreach(List<Point> lp in ((SingleChoiceArea)I).list){
+	        					Rectangle r =I.ImgArea;
+	        					r.Height/= ((SingleChoiceArea)I).Count;
+        						r.Y += subcnt* r.Height;
+        						subcnt++;
+        						
+        						_xztRect[cnt] = r;
+        						cnt++;
+        					}
+        				}
+        			}
+        		}
+        		return _xztRect;
+        	}
+        }
     	
     }
 }
